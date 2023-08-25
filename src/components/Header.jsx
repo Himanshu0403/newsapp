@@ -33,7 +33,7 @@ const Header = () => {
     signOut(auth)
       .then(async () => {
         // Sign-out successful.
-        console.log({ currentUser });
+        // console.log({ currentUser });
       })
       .catch(error => {
         // An error happened.
