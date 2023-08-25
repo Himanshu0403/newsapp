@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import './Home.css';
-import { Link } from 'react-router-dom';
+import { BsGridFill, BsList } from 'react-icons/bs';
 import axios from 'axios';
 import { FcBookmark } from 'react-icons/fc';
 import { auth } from '../firebase';
@@ -22,14 +22,31 @@ import { Firestore } from 'firebase/firestore';
 
 const Home = () => {
   const [news, setNews] = useState([]);
-  // const [isGridView, setIsGridView] = useState(false);
+  const [isGridView, setIsGridView] = useState(true);
   const [keyword, setKeyword] = useState('');
-  const [cardsPerRow, setCardsPerRow] = useState(1);
+
   useEffect(() => {
     if (keyword === '') {
       fetchNews();
+    } else {
+      const debounceEffect = setTimeout(() => {
+        const filteredNews = news.filter(article => {
+          const title = article.title || '';
+          const description = article.description || '';
+
+          return (
+            title.toLowerCase().includes(keyword.toLowerCase()) ||
+            description.toLowerCase().includes(keyword.toLowerCase())
+          );
+        });
+        setNews(filteredNews);
+      }, 300);
+      return () => clearTimeout(debounceEffect);
     }
   }, [keyword]);
+  const toggleView = () => {
+    setIsGridView(prevState => !prevState); // Toggle the view
+  };
   const fetchNews = () => {
     axios
       .get(
@@ -56,58 +73,27 @@ const Home = () => {
       console.error('Error saving article as favorite:', error);
     }
   };
-  const handleSearch = () => {
-    const filteredNews = news.filter(article => {
-      const title = article.title || '';
-      const description = article.description || '';
-
-      return (
-        title.toLowerCase().includes(keyword.toLowerCase()) ||
-        description.toLowerCase().includes(keyword.toLowerCase())
-      );
-    });
-    setNews(filteredNews);
-  };
-
   return (
-    <Container h={'95vh'} p={4}>
+    <div style={{ margin: '60px auto', maxWidth: '1000px' }}>
       <Heading align={'center'} mb={'8'}>
         Latest News
       </Heading>
-      <Input
-        type="text"
-        placeholder="Search"
-        value={keyword}
-        onChange={e => setKeyword(e.target.value)}
-      />
-      <Button colorScheme="yellow" onClick={handleSearch}>
-        Search
-      </Button>
-      <Box mt={4}>
-        <Slider
-          aria-label="Cards per row"
-          defaultValue={1}
-          min={1}
-          max={3}
-          step={1}
-          value={cardsPerRow}
-          alignSelf={'flex-end'}
-          onChange={value => setCardsPerRow(value)}
-        >
-          <SliderTrack bg="yellow.100">
-            <SliderFilledTrack bg="yellow" />
-          </SliderTrack>
-          <SliderThumb />
-        </Slider>
-        <Text mt={2} textAlign="center">
-          {cardsPerRow}
-        </Text>
+      <Box m={'auto'} display={'flex'} alignItems={'center'}>
+        <Input
+          type="text"
+          placeholder="Search"
+          value={keyword}
+          onChange={e => setKeyword(e.target.value)}
+          focusBorderColor="yellow.500"
+          flex="80%"
+          marginRight="2"
+        />
+        <Button onClick={toggleView} variant={'ghost'}>
+          {isGridView ? <BsGridFill /> : <BsList />}
+        </Button>
       </Box>
-      <div
-        className="news"
-        style={{ justifyContent: cardsPerRow === 1 ? 'center' : 'flex-start' }}
-      >
-        <Flex direction={cardsPerRow === 1 ? 'column' : 'row'} flexWrap="wrap">
+      <div className="news" style={{ justifyContent: 'flex-start' }}>
+        <Flex direction={'row'} flexWrap="wrap">
           {news.map((article, index) => (
             <Box
               key={index}
@@ -116,8 +102,8 @@ const Home = () => {
               p={2}
               my={2}
               overflowWrap={'break-word'}
-              width={`calc(${100 / cardsPerRow}% - 16px)`}
-              marginRight={cardsPerRow === 1 ? 0 : '16px'}
+              width={isGridView ? 'full' : `calc(25% - 16px)`}
+              marginRight={isGridView ? 0 : '16px'}
             >
               <Image
                 src={article.urlToImage}
@@ -134,11 +120,11 @@ const Home = () => {
                 <Button
                   as="a"
                   href={article.url}
-                  colorScheme="blue"
                   target="_self"
                   rel="noopener noreferrer"
                   mt={2}
                   size="sm"
+                  colorScheme="yellow"
                 >
                   Read More
                 </Button>
@@ -156,7 +142,7 @@ const Home = () => {
           ))}
         </Flex>
       </div>
-    </Container>
+    </div>
   );
 };
 
